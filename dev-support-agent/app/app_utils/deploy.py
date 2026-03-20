@@ -18,12 +18,18 @@ import importlib
 import inspect
 import json
 import logging
+import os
 import warnings
 from typing import Any
 
 import click
 import google.auth
 import vertexai
+from dotenv import load_dotenv, find_dotenv
+
+# Load environment variables from .env file (searching up to root)
+load_dotenv(find_dotenv())
+
 from google.cloud import resourcemanager_v3
 from google.iam.v1 import iam_policy_pb2, policy_pb2
 from vertexai._genai import _agent_engines_utils
@@ -301,6 +307,11 @@ def deploy_agent_engine_app(
     # Set deployment-specific environment variables
     env_vars["GOOGLE_CLOUD_REGION"] = location
     env_vars["NUM_WORKERS"] = str(num_workers)
+
+    # Pass GOOGLE_CLOUD_LOCATION from local environment if set (e.g. from .env)
+    local_location = os.environ.get("GOOGLE_CLOUD_LOCATION")
+    if local_location:
+        env_vars.setdefault("GOOGLE_CLOUD_LOCATION", local_location)
 
     # Enable telemetry by default for Agent Engine
     env_vars.setdefault("GOOGLE_CLOUD_AGENT_ENGINE_ENABLE_TELEMETRY", "true")

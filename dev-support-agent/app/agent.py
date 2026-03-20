@@ -15,22 +15,21 @@
 
 import datetime
 from zoneinfo import ZoneInfo
+import os
+import logging
 
+from dotenv import load_dotenv, find_dotenv
+import google.auth
+import google.auth.transport.requests
 from google.adk.agents import Agent
 from google.adk.apps import App
 from google.adk.models import Gemini
 from google.genai import types
-
-import google.auth
-import google.auth.transport.requests
-from google.adk.agents import Agent
 from google.adk.tools.mcp_tool.mcp_session_manager import StreamableHTTPConnectionParams
 from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset
 
-import os
-import google.auth
-
-import logging
+# Load environment variables from .env file
+load_dotenv(find_dotenv())
 
 # Set the threshold to DEBUG and define a clear format
 logging.basicConfig(
@@ -51,7 +50,7 @@ def get_logging_mcp_toolset():
             url="https://logging.googleapis.com/mcp",
             headers={
                 "Authorization": f"Bearer {credentials.token}",
-                "x-goog-user-project": os.environ["GOOGLE_CLOUD_PROJECT"],
+                "x-goog-user-project": os.environ.get("GOOGLE_CLOUD_PROJECT", ""),
                 "Content-Type": "application/json",
             },
         )
@@ -59,13 +58,17 @@ def get_logging_mcp_toolset():
 
 
 def get_repos_mcp_toolset():
+    # GH_TOKEN is required for GitHub Copilot MCP
+    gh_token = os.environ.get("GH_TOKEN", "")
+    if not gh_token:
+        logging.warning("GH_TOKEN environment variable is not set.")
 
     # 3. Define the Toolset for the Google Logging MCP endpoint
     return MCPToolset(
         connection_params=StreamableHTTPConnectionParams(
             url="https://api.githubcopilot.com/mcp",
             headers={
-                "Authorization": f"Bearer {os.environ['GH_TOKEN']}",
+                "Authorization": f"Bearer {gh_token}",
                 "X-MCP-Toolsets": "repos,issues,pull_requests",
                 "X-MCP-Readonly": "true",
             },
